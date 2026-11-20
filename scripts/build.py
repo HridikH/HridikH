@@ -8,7 +8,7 @@ import textwrap
 
 from PIL import Image, ImageDraw
 
-from theme import CHAR_W, ROOT, THEMES, esc, font_css, icon_path, pcb_grid, write
+from theme import ADAPTIVE, CHAR_W, ROOT, THEMES, adapt, esc, font_css, icon_path, pcb_grid, write
 
 GRID = json.loads((ROOT / "scripts" / "avatar-grid.json").read_text())
 
@@ -289,9 +289,9 @@ def stack(t):
 if __name__ == "__main__":
     write("assets/avatar.svg", avatar_svg(THEMES["dark"]))
     avatar_png(ROOT / "assets" / "avatar.png")
-    for mode, t in THEMES.items():
-        write(f"assets/banner-{mode}.svg", banner(t))
-        write(f"assets/stack-{mode}.svg", stack(t))
-        for p in PROJECTS:
-            write(f"assets/card-{p['slug']}-{mode}.svg", card(t, p))
+    t = ADAPTIVE
+    write("assets/banner.svg", adapt(banner(t)))
+    write("assets/stack.svg", adapt(stack(t)))
+    for p in PROJECTS:
+        write(f"assets/card-{p['slug']}.svg", adapt(card(t, p)))
     print("built static assets")

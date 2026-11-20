@@ -8,7 +8,7 @@ import sys
 import urllib.request
 from datetime import date
 
-from theme import THEMES, esc, font_css, pcb_grid, write
+from theme import ADAPTIVE, adapt, esc, font_css, write
 
 LOGIN = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("GH_USER", "HridikH")
 QUERY = """
@@ -97,6 +97,5 @@ def card(t, s):
 
 if __name__ == "__main__":
     s = summarize(fetch())
-    for mode, t in THEMES.items():
-        write(f"assets/live/stats-{mode}.svg", card(t, s))
+    write("assets/live/stats.svg", adapt(card(ADAPTIVE, s)))
     print(json.dumps({k: v for k, v in s.items() if k != "weeks"}))

@@ -1,5 +1,6 @@
 """One palette, one typeface. Every generated SVG pulls its colors and font from here."""
 import base64
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -48,6 +49,40 @@ def pcb_grid(t, w, h, step=16, ident="g"):
     return (f'<defs><pattern id="{ident}" width="{step}" height="{step}" patternUnits="userSpaceOnUse">'
             f'<circle cx="1" cy="1" r="1" fill="{t["grid"]}"/></pattern></defs>'
             f'<rect width="{w}" height="{h}" fill="url(#{ident})"/>')
+
+
+# Single-file theming: every color is a CSS variable, switched by prefers-color-scheme
+# inside the SVG. One file per graphic, so it can sit inside a link on GitHub.
+ADAPTIVE = {k: f"var(--{k})" for k in THEMES["light"]}
+
+
+def _vars(t):
+    return ";".join(f"--{k}:{v}" for k, v in t.items())
+
+
+def vars_css():
+    return f"svg{{{_vars(THEMES['light'])}}}@media (prefers-color-scheme:dark){{svg{{{_vars(THEMES['dark'])}}}}}"
+
+
+_TAG = re.compile(r"<[a-zA-Z][^>]*>")
+_VAR_ATTR = re.compile(r'\s(fill|stroke|stop-color)="(var\(--[a-z_]+\))"')
+
+
+def adapt(svg):
+    """Move var() colors out of presentation attributes (which don't take var()) into style."""
+    def fix(m):
+        tag = m.group(0)
+        props = _VAR_ATTR.findall(tag)
+        if not props:
+            return tag
+        tag = _VAR_ATTR.sub("", tag)
+        decl = ";".join(f"{k}:{v}" for k, v in props)
+        if ' style="' in tag:
+            return tag.replace(' style="', f' style="{decl};', 1)
+        end = -2 if tag.endswith("/>") else -1
+        return f'{tag[:end]} style="{decl}"{tag[end:]}'
+    svg = _TAG.sub(fix, svg)
+    return svg.replace("<style>", f"<style>{vars_css()}", 1)
 
 
 def write(rel, svg):
